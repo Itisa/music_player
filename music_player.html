@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>music_listener</title>
+</head>
+
+<style type="text/css">
+	#select{
+		/*position: fixed;*/
+		/*left: 50px;*/
+		/*top: 50px;*/
+		/*z-index: -1;*/
+		font-size: 20px;
+		height: 30px;
+		width: 200px;
+	}
+	.words{
+		color: red;
+		font-size: 25px;
+	}
+	.stop_time{
+		position: absolute;
+		right: 10px;
+		top: 10px;
+	}
+	/*#video{
+		position: fixed;
+		top: 0px;
+		left: 0px;
+		z-index: -100;
+	}*/
+</style>
+
+
+<body onkeydown="keydown(event)">
+
+<!-- <video id="video" width="300px" height="150px"></video> -->
+<video id="video" width="100%" height="100%" style="position: absolute; left: 0px; top: 0px; z-index: -1"></video>
+<!-- <video id="video"></video> -->
+<!-- <video id="video2" loop="true" src="file:///Users/haoransong/Desktop/bilimusic/sincerely.m4s"></video> -->
+<p></p>
+<select id="select" onchange="selectchange(event)"></select>
+<div class="words">
+	<p name="volume" hidden="true"></p>
+	<p name="muted" hidden="true"></p>
+	<p name="playtype" hidden="true"></p>
+	<p name="choose_stop_time" hidden="true"></p>
+	<p class="stop_time" name="stop_time" hidden="true"></p>
+</div>
+</body>
+
+<script type="text/javascript" src="./datas.js" charset="utf-8"></script>
+<script type="text/javascript" charset="utf-8">
+	// l = ["music1.mp3","music2.m4s","video1.mp4"];
+	var path = "./";
+	var sett = setInterval(time,100),t=0,events=[]
+	events.push([-1,"document.getElementsByName('volume')[0].hidden=true"]);
+	events.push([-1,"document.getElementsByName('muted')[0].hidden=true"]);
+	events.push([-1,"document.getElementsByName('playtype')[0].hidden=true"]);
+	events.push([-1,"start_count_time()"]);
+	events.push([-1,"stop_time_reaced()"]);
+	var video = document.getElementById('video');
+	video.controls = true;
+	var volume = 50;
+	video.volume = volume/100;
+	var select = document.getElementById('select');
+	let focus = false;
+	var playtype = 'loop';
+	var stop_time = -1;
+	var timelist = [5,10,15,30,45,60,0],nowtimelistindex = -1;
+	
+	video.onended = function(ev) {
+		// console.log(ev)
+		if (playtype == 'loop'){
+			video.currentTime = 0;
+			video.play();
+		} else if (playtype == 'sequential'){
+			change_song(1,"add");
+		} else {
+			if (l.length == 1) {
+				change_song(0,"goto");
+			} else {
+				while (true){
+					let next = Math.floor(Math.random()*l.length);
+					if (next != select.options.selectedIndex) {
+						change_song(next,"goto");
+						break;
+					}
+				}
+			}
+		}
+	}
+	video.onfocus = function (ev) {focus=true;}
+	video.onblur = function (ev) {focus=false;}
+	video.onvolumechange = function (ev) {
+		let pv = document.getElementsByName("volume")[0];
+		video.volume = volume/100
+		// video.muted = false
+		if (video.muted==true){
+			let pm= document.getElementsByName("muted")[0];
+			pm.hidden = false;
+			pm.textContent = "muted : true";
+			events[1][0] = t+10;
+		}
+
+		pv.hidden = false
+		pv.textContent = "volume : " + video.volume;
+		events[0][0] = t+10
+	}
+
+	function selectchange(ev) {
+		video.src = path+select.value
+		song_index = ev.target.options.selectedIndex
+		video.play()
+		select.blur()
+	}
+
+	function change_song(k,method) {
+		var ind;
+		if (method == "add") {
+			ind = select.options.selectedIndex;
+			ind += k;
+			if (ind < 0){ind = l.length-1;}
+			if (ind >= l.length){ind = 0;} 
+		} else if (method == "goto") {
+			ind = k;
+			if (ind < 0) { ind = 0; }
+			else if (ind >= l.length) { ind = l.length-1; }
+		}
+		select.options.selectedIndex = ind;
+		video.src = path+select.value
+		video.play();
+	}
+
+	function keydown(ev) {
+		var c = ev.keyCode;var k = ev.key;
+		// console.log(c,k)
+		// console.log(ev)
+		if (ev.metaKey==true) {
+			return ;
+		}
+		if(c==32&&focus==false){ // " "
+			if(video.paused==true){video.play();}else{video.pause()};
+		} else if (c==38) { // "ArrowUp"
+			volume = Math.min(volume+10,100); video.volume = volume/100;
+		} else if (c==40) { // "ArrowDown"
+			volume = Math.max(volume-10,0);   video.volume = volume/100;
+		} else if (c==37) { // 'ArrowLeft'
+			video.currentTime -= 5;
+		} else if (c==39) { // 'ArrowRight'
+			video.currentTime += 5;
+		} else if (c==77) { // 'M'
+			// if(video.muted==true){video.muted=false;}else{video.muted=true;};
+			video.muted = !video.muted;
+			let pm= document.getElementsByName("muted")[0];
+			pm.hidden = false;
+			pm.textContent = "muted : " + video.muted;
+			events[1][0] = t+10;
+		} else if (c==83) { // "S"
+			select.hidden = !select.hidden;
+			video.controls = !video.controls;
+		} else if (c==68) { // "D" next 
+			change_song(1,"add");
+		} else if (c==65) { // "A" last
+			change_song(-1,"add");
+		} else if (c==76) { // "L" change loop
+			if (playtype == 'loop') {playtype = 'sequential';}
+			else if (playtype == 'sequential') {playtype = 'random';}
+			else {playtype = 'loop';}
+			let pl= document.getElementsByName("playtype")[0];
+			pl.textContent = "playtype: " + playtype;
+			pl.hidden = false;
+			events[2][0] = t+10;
+		} else if (c==66) { // "B" goto the beginning
+			video.currentTime = 0;
+		} else if (c==84) { // "T" set stop time
+			let cl = document.getElementsByName("choose_stop_time")[0];
+			nowtimelistindex += 1;
+			if (nowtimelistindex == timelist.length) {nowtimelistindex = 0;}
+			cl.textContent = "stop_time: " + timelist[nowtimelistindex] + "min";
+			cl.hidden = false;
+			events[3][0] = t+10;
+		}
+	}
+	
+	function start_count_time() {
+		document.getElementsByName('choose_stop_time')[0].hidden=true;
+		let addtime = timelist[nowtimelistindex]
+		if (addtime == 0) {
+			document.getElementsByName('stop_time')[0].hidden=true;
+			events[4][0] = stop_time = t-1;
+			nowtimelistindex = -1;
+		} else {
+			document.getElementsByName('stop_time')[0].hidden=false;
+			stop_time=t+addtime*600;
+			events[4][0] = stop_time;
+			nowtimelistindex = -1;
+		}
+	}
+
+	function stop_time_reaced() {
+		document.getElementsByName('stop_time')[0].hidden=true;
+		video.pause();
+	}
+
+	function time() {
+		t += 1;
+		for (var i = events.length-1 ; i >= 0; i--) {
+			var e = events[i];
+			if (t == e[0]) {
+				eval(e[1]);
+			}
+		}
+		if (stop_time > t) {
+			let tl = document.getElementsByName('stop_time')[0];
+			tl.textContent = Math.floor((stop_time - t)/10);
+		}
+	}
+	
+	var song_index = 0;
+	for (var i = 0; i < l.length; i++) {
+		let c = document.createElement("option")
+		c.value = l[i]
+		c.text = l[i]
+		select.appendChild(c)
+	}	
+	select.options.selectedIndex = 1
+	video.src = path+select.value
+	// video.width = window.innerWidth;
+	// video.height = window.innerHeight;
+
+</script>
+</html>
+
+
+
