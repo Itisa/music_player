@@ -23,6 +23,11 @@
 		right: 10px;
 		top: 10px;
 	}
+	.buttons{
+		height: 80px;
+		width: 80px;
+		font-size: 30px;
+	}
 	/*#video{
 		position: fixed;
 		top: 0px;
@@ -47,12 +52,19 @@
 	<p name="choose_stop_time" hidden="true"></p>
 	<p class="stop_time" name="stop_time" hidden="true"></p>
 </div>
+<div id="all_buttons">
+	<button onclick="pressbutton(event)" class="buttons">last</button>
+	<button onclick="pressbutton(event)" class="buttons">next</button>
+	<button onclick="pressbutton(event)" class="buttons">stop</button>
+	<button onclick="pressbutton(event)" class="buttons">start</button>
+</div>
+
 </body>
 
-<script type="text/javascript" src="./datas.js" charset="utf-8"></script>
+<script type="text/javascript" src="../static/js/datas.js" charset="utf-8"></script>
 <script type="text/javascript" charset="utf-8">
 	// l = ["music1.mp3","music2.m4s","video1.mp4"];
-	var path = "./";
+	// var path = "./";
 	var sett = setInterval(time,100),t=0,events=[]
 	events.push([-1,"document.getElementsByName('volume')[0].hidden=true"]);
 	events.push([-1,"document.getElementsByName('muted')[0].hidden=true"]);
@@ -187,10 +199,13 @@
 				video.hidden = true;
 				select.hidden = true;
 				document.getElementsByClassName("words")[0].hidden = true;
+				document.getElementById("all_buttons").hidden = true;
 			} else {
 				video.hidden = false;
 				select.hidden = !video.controls;
 				document.getElementsByClassName("words")[0].hidden = false;
+				if (/Mobile/.test(navigator.userAgent)) 
+					{document.getElementById("all_buttons").hidden = false;}
 			}
 		} else if (c==8) { // "Backspace" 
 			window.location.href = "about:blank";
@@ -231,6 +246,27 @@
 		}
 	}
 	
+	function pressbutton(ev) {
+		// console.log(ev)
+		// console.log(ev.target.textContent);
+		let tarev = {}
+		switch(ev.target.textContent){
+			case "last":
+				tarev.keyCode = 65;
+				keydown(tarev);
+				break;
+			case "next":
+				tarev.keyCode = 68;
+				keydown(tarev);
+				break;
+			case "stop":
+				tarev.keyCode = 32;
+				keydown(tarev);
+				break;
+		}
+	}
+
+
 	var song_index = 0;
 	for (var i = 0; i < l.length; i++) {
 		let c = document.createElement("option")
@@ -240,6 +276,9 @@
 	}	
 	select.options.selectedIndex = 1
 	video.src = path+select.value
+	if (/Mobile/.test(navigator.userAgent) == false) {
+		document.getElementById("all_buttons").hidden = true;
+	}
 	// video.width = window.innerWidth;
 	// video.height = window.innerHeight;
 
