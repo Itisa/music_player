@@ -51,6 +51,7 @@
 	<p name="playtype" hidden="true"></p>
 	<p name="choose_stop_time" hidden="true"></p>
 	<p class="stop_time" name="stop_time" hidden="true"></p>
+	<p class="pausestyle" name="pausestyle" hidden="true"></p>
 </div>
 <div id="all_buttons">
 	<button onclick="pressbutton(event)" class="buttons">last</button>
@@ -66,11 +67,13 @@
 	// l = ["music1.mp3","music2.m4s","video1.mp4"];
 	// var path = "./";
 	var sett = setInterval(time,100),t=0,events=[]
+	var targetvolume=50,volumesett;
 	events.push([-1,"document.getElementsByName('volume')[0].hidden=true"]);
 	events.push([-1,"document.getElementsByName('muted')[0].hidden=true"]);
 	events.push([-1,"document.getElementsByName('playtype')[0].hidden=true"]);
 	events.push([-1,"start_count_time()"]);
 	events.push([-1,"stop_time_reaced()"]);
+	events.push([-1,"document.getElementsByName('pausestyle')[0].hidden=true"]);
 	var video = document.getElementById('video');
 	video.controls = true;
 	var volume = 50;
@@ -81,15 +84,18 @@
 	var stop_time = -1;
 	var timelist = [5,10,15,30,45,60,0],nowtimelistindex = -1;
 	var dhidden = false;
+	var pausestyle = "normal";
+	var words = document.getElementsByClassName('words')[0];
 
 	video.onended = function(ev) {
+		clearInterval(volumesett)
 		// console.log(ev)
 		if (playtype == 'loop'){
 			video.currentTime = 0;
 			video.play();
 		} else if (playtype == 'sequential'){
 			change_song(1,"add");
-		} else {
+		} else if (playtype == 'random'){
 			if (l.length == 1) {
 				change_song(0,"goto");
 			} else {
@@ -101,6 +107,8 @@
 					}
 				}
 			}
+		}	else if (playtype == "single"){
+			// pass
 		}
 	}
 	video.onfocus = function (ev) {focus=true;}
@@ -120,6 +128,37 @@
 		pv.textContent = "volume : " + video.volume;
 		events[0][0] = t+10
 	}
+	function playvideo() {
+		clearInterval(volumesett);
+		volume = 0;
+		video.volume = 0;
+		video.play();
+		volumesett = setInterval(unmuteInterval,8-targetvolume/8)
+	}
+	function unmuteInterval() {
+		video.play();
+		volume += 1;
+		video.volume = volume/100;
+		if (volume >= targetvolume){
+			clearInterval(volumesett)
+		}
+	}
+	function pausevideo() {
+		clearInterval(volumesett);
+		volumesett = setInterval(muteinterval,8-targetvolume/8)
+	}
+	function muteinterval() {
+		video.play();
+		volume -= 1;
+		video.volume = volume/100;
+		if (volume <= 0){
+			clearInterval(volumesett);
+			volume = targetvolume;
+			video.volume = volume/100;
+			video.pause();
+		}
+	}
+
 
 	function selectchange(ev) {
 		video.src = path+select.value
@@ -129,6 +168,7 @@
 	}
 
 	function change_song(k,method) {
+		clearInterval(volumesett)
 		var ind;
 		if (method == "add") {
 			ind = select.options.selectedIndex;
@@ -152,12 +192,16 @@
 		if (ev.metaKey==true) {
 			return ;
 		}
-		if(c==32&&focus==false){ // " "
-			if(video.paused==true){video.play();}else{video.pause()};
+		if(c==32){ // " "
+			if (pausestyle=="gradient"){
+				if(video.paused==true){playvideo();}else{pausevideo()};
+			} else if (focus == false){
+				if(video.paused==true){video.play();}else{video.pause()};
+			}
 		} else if (c==38) { // "ArrowUp"
-			volume = Math.min(volume+10,100); video.volume = volume/100;
+			targetvolume=volume=Math.min(volume+10,100); video.volume=volume/100;
 		} else if (c==40) { // "ArrowDown"
-			volume = Math.max(volume-10,0);   video.volume = volume/100;
+			targetvolume=volume=Math.max(volume-10,0); video.volume=volume/100;
 		} else if (c==37) { // 'ArrowLeft'
 			// video.currentTime -= 5;
 		} else if (c==39) { // 'ArrowRight'
@@ -172,6 +216,7 @@
 		} else if (c==83) { // "S"
 			select.hidden = !select.hidden;
 			video.controls = !video.controls;
+			words.hidden = !words.hidden;
 		} else if (c==68) { // "D" next 
 			change_song(1,"add");
 		} else if (c==65) { // "A" last
@@ -179,6 +224,7 @@
 		} else if (c==76) { // "L" change loop
 			if (playtype == 'loop') {playtype = 'sequential';}
 			else if (playtype == 'sequential') {playtype = 'random';}
+			else if (playtype == 'random') {playtype = "single"}
 			else {playtype = 'loop';}
 			let pl= document.getElementsByName("playtype")[0];
 			pl.textContent = "playtype: " + playtype;
@@ -198,17 +244,24 @@
 			if (dhidden == true) {
 				video.hidden = true;
 				select.hidden = true;
-				document.getElementsByClassName("words")[0].hidden = true;
+				words.hidden = true;
 				document.getElementById("all_buttons").hidden = true;
 			} else {
 				video.hidden = false;
 				select.hidden = !video.controls;
-				document.getElementsByClassName("words")[0].hidden = false;
+				words.hidden = select.hidden;
 				if (/Mobile/.test(navigator.userAgent)) 
 					{document.getElementById("all_buttons").hidden = false;}
 			}
 		} else if (c==8) { // "Backspace" 
 			window.location.href = "about:blank";
+		} else if (c==86) { // "V"
+			if (pausestyle == "normal"){pausestyle = "gradient"}
+			else {pausestyle = "normal"}
+			let pp= document.getElementsByName("pausestyle")[0];
+			pp.hidden = false;
+			pp.textContent = "pausestyle : " + pausestyle;
+			events[5][0] = t+10;
 		}
 	}
 	
